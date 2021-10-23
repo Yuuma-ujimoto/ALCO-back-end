@@ -1,0 +1,4 @@
+config/mysql.js
+config/hash.js
+node_modules
+.idea
