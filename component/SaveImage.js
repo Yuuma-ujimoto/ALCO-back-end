@@ -17,11 +17,12 @@ module.exports = async (ImageData) => {
 
         // ファイルパス
         const ImageFilePath = `${ImageFileName}.${ImageExtension}`
-
-        await ImageData.mv(path.join("./files/", ImageFilePath))
+        const ImageFileAbsolutePath = path.join("./files/", ImageFilePath)
+        await ImageData.mv(ImageFileAbsolutePath)
         return {
             ServerError: false,
-            ImageFilePath: ImageFilePath
+            // MEMO:ImageFileAbsolutePathをImageFilePathの混同後からみた時に混乱しない？
+            ImageFilePath: ImageFileAbsolutePath
         }
     } catch (e) {
         console.log(e)
