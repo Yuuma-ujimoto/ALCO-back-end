@@ -22,8 +22,11 @@ app.use(express.urlencoded({extended: true, limit: "50mb"}));
 
 app.use(express.static("files"))
 
+const UserRouter = require("./API/User")
+const PostRouter = require("./API/Post")
 
-
+app.use("/user",UserRouter)
+app.use("/post",PostRouter)
 
 
 app.listen(3000)

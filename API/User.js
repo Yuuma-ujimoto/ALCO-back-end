@@ -7,17 +7,18 @@ const isOverlappingMailAddress = require("../component/IsOverlappingMailAddress"
 const isOverlappingAccountName = require("../component/IsOverlappingAccountName")
 const hashString = require("../component/hashString")
 //ユーザー登録
-router.post("/",
+router.post("/SignUp",
     async (req, res, next) => {
+        //分割代入でデフォルト値入れとくことで存在しない値を取得した際にエラーを回避
         const {
-            AccountName,    //アカウント名
-            DisplayName,    //表示名
-            MailAddress,    //メールアドレス
-            Password,       //パスワード
-            ConfirmPassword,//確認用パスワード
-            BirthdateYear,  //生年月日　年
-            BirthdateMonth, //生年月日　月
-            BirthdateDate   //生年月日　日
+            AccountName = null,    //アカウント名
+            DisplayName = null,    //表示名
+            MailAddress = null,    //メールアドレス
+            Password = null,       //パスワード
+            ConfirmPassword = null,//確認用パスワード
+            BirthdateYear = null,  //生年月日　年
+            BirthdateMonth = null, //生年月日　月
+            BirthdateDate = null   //生年月日　日
         } = req.body
 
         if (!AccountName || !DisplayName || !MailAddress || !Password || !ConfirmPassword ||
@@ -81,19 +82,19 @@ router.post("/",
             const InsertUserDataStatement = [AccountName, DisplayName, MailAddress, HashedPassword, BirthDay]
             await connection.query(InsertUserDataSQL, InsertUserDataStatement)
 
-            const Token = hashString()
+            const Token = hashString(MailAddress+AccountName)
 
             const InsertTokenSQL = "insert into token(user_id,user_token) value((" +
                 "select user_id from user where mail_address = ? and password = ? and is_deleted = 0" +
                 "),?)"
-            const InsertTokenStatement = [MailAddress,Password,Token]
+            const InsertTokenStatement = [MailAddress, Password, Token]
 
-            await connection.query(InsertTokenSQL,InsertTokenStatement)
+            await connection.query(InsertTokenSQL, InsertTokenStatement)
 
             res.json({
-                ServerError:false,
-                ClientError:false,
-                Token:Token
+                ServerError: false,
+                ClientError: false,
+                Token: Token
             })
 
 
@@ -105,6 +106,57 @@ router.post("/",
                 Message: "サーバーエラー"
             })
         } finally {
+            await connection.end()
+        }
+    })
+
+router.post("/SignIn",
+    async (req, res) => {
+        const {
+            MailAddress = null,
+            Password = null
+        } = req.body
+
+        if (!MailAddress || !Password) {
+            res.json({
+                ServerError: false,
+                ClientError: true,
+                Message: "パラメーターが足りません。"
+            })
+        }
+        const HashPassword = hashString(Password)
+        const connection = await mysql.createConnection(mysql_config)
+        try {
+            const SignInSQL = "select count(*) as count from user where mail_address = ? and password = ? and is_deleted = 0"
+
+            const [SignInResult,] = await connection.query(SignInSQL,[MailAddress,HashPassword])
+            if (!SignInResult[0].count){
+                res.json({
+                    ServerError:false,
+                    ClientError:true,
+                    Message:"ログインに失敗しました。"
+                })
+                return
+            }
+
+            const SelectTokenSQL =
+                "select user_token from token where user_id = (" +
+                "select user_id from user where mail_address = ? and password = ? and is_deleted = 0 limit 1" +
+                ") and is_deleted = 0"
+
+            const [SelectTokenResult,] = await connection.query(SelectTokenSQL,[MailAddress,HashPassword])
+
+            const Token = SelectTokenResult[0].user_token
+
+            res.json({
+                ServerError:false,
+                ClientError:false,
+                Token:Token
+            })
+
+        }catch (e) {
+
+        }finally {
             await connection.end()
         }
     })

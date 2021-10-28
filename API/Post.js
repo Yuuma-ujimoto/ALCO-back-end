@@ -22,7 +22,14 @@ router.post("/",
             res.json(AuthResult)
         }
         const UserId = AuthResult.UserId
-        const {PostText} = req.body
+        const {PostText=null} = req.body
+        if (!!PostText){
+            res.json({
+                ServerError:false,
+                ClientError:true,
+                Message:"データ不足s"
+            })
+        }
         let ImageFiles = req.files.PostImage
 
         // 強制的に配列に変換
@@ -82,6 +89,11 @@ router.post("/",
             await connection.end()
         }
     })
+
+router.post("/reply")
+
+router.post("/favorite")
+
 
 
 module.exports = router
