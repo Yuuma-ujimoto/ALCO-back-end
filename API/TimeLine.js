@@ -33,15 +33,18 @@ router.get("/global",
             "(select post_id from post where is_deleted = 0 order by post_id desc limit 100)"
 
         const SelectPostFavoriteSQL =
-            "select count(*) as count,post_id from post_favorite group by post_id order by desc limit 100"
+            "select count(*) as count,post_id " +
+            "from post_favorite " +
+            "group by post_id " +
+            "order by desc limit 100"
 
         const connection = await mysql.createConnection(mysql_config)
         try {
 
 
-            const SelectPostResult = await connection.query(SelectPostSQL)
-            const SelectPostReplyResult = await connection.query(SelectPostReplySQL)
-            const SelectPostFavoriteResult = await connection.query(SelectPostFavoriteSQL)
+            const [SelectPostResult,] = await connection.query(SelectPostSQL)
+            const [SelectPostReplyResult,] = await connection.query(SelectPostReplySQL)
+            const [SelectPostFavoriteResult,] = await connection.query(SelectPostFavoriteSQL)
 
             const EditedPostReplyResult = SetReplyResult(SelectPostReplyResult)
             const EditedPostFavoriteResult = SetFavoriteResult(SelectPostFavoriteResult)
