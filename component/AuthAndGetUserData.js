@@ -4,17 +4,17 @@ const mysql_config = require("../config/mysql")
 module.exports = async (req) => {
     const connection = await mysql.createConnection(mysql_config)
     try {
-        if (!!req.header("token")){
+        if (!req.header("token")){
             return {
                 ServerError: false,
                 ClientError: true,
                 Message:"トークンが存在しません。"
             }
         }
-        const AuthTokenSQL = "select user_id from user where token = ? and is_deleted = 0"
+        const AuthTokenSQL = "select user_id from user_token where user_token = ?"
         const [AuthTokenResult,] = await connection.query(AuthTokenSQL, [req.header("token")])
 
-        if (!!AuthTokenResult[0].user_id) {
+        if (!AuthTokenResult[0].user_id) {
             return {
                 ServerError: false,
                 ClientError: true,

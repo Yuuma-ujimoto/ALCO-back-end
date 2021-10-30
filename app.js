@@ -24,9 +24,11 @@ app.use(express.static("files"))
 
 const UserRouter = require("./API/User")
 const PostRouter = require("./API/Post")
+const TimelineRouter = require("./API/TimeLine")
 
 app.use("/user",UserRouter)
 app.use("/post",PostRouter)
+app.use("/timeline",TimelineRouter)
 
 
 app.listen(3000)

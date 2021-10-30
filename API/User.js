@@ -6,8 +6,9 @@ const mysql_config = require("../config/mysql")
 const isOverlappingMailAddress = require("../component/IsOverlappingMailAddress")
 const isOverlappingAccountName = require("../component/IsOverlappingAccountName")
 const hashString = require("../component/hashString")
+const AgeVerification = require("../component/AgeVerification")
 //ユーザー登録
-router.post("/SignUp",
+router.post("/signUp",
     async (req, res, next) => {
         //分割代入でデフォルト値入れとくことで存在しない値を取得した際にエラーを回避
         const {
@@ -74,20 +75,26 @@ router.post("/SignUp",
         // ここら辺でパスワードのHash化
 
         const HashedPassword = hashString(Password)
-        const BirthDay = `${BirthdateYear}-${BirthdateMonth}-${BirthdateDate}`
+        const AgeVerificationResult =AgeVerification(BirthdateYear,BirthdateMonth,BirthdateDate)
+
+        if (AgeVerificationResult.ServerError||AgeVerificationResult.ClientError){
+            res.json(AgeVerificationResult)
+            return
+        }
+        const BirthDay = AgeVerificationResult.BirthDay
         try {
 
 
-            const InsertUserDataSQL = "insert into user(account_name,display_name,mail_address,password,birth_day)"
+            const InsertUserDataSQL = "insert into user(account_name,display_name,mail_address,password,birthday) values(?,?,?,?,?)"
             const InsertUserDataStatement = [AccountName, DisplayName, MailAddress, HashedPassword, BirthDay]
             await connection.query(InsertUserDataSQL, InsertUserDataStatement)
 
             const Token = hashString(MailAddress+AccountName)
 
-            const InsertTokenSQL = "insert into token(user_id,user_token) value((" +
+            const InsertTokenSQL = "insert into user_token(user_id,user_token) value((" +
                 "select user_id from user where mail_address = ? and password = ? and is_deleted = 0" +
                 "),?)"
-            const InsertTokenStatement = [MailAddress, Password, Token]
+            const InsertTokenStatement = [MailAddress, HashedPassword, Token]
 
             await connection.query(InsertTokenSQL, InsertTokenStatement)
 
@@ -110,7 +117,7 @@ router.post("/SignUp",
         }
     })
 
-router.post("/SignIn",
+router.post("/signIn",
     async (req, res) => {
         const {
             MailAddress = null,
@@ -140,9 +147,9 @@ router.post("/SignIn",
             }
 
             const SelectTokenSQL =
-                "select user_token from token where user_id = (" +
+                "select user_token from user_token where user_id = (" +
                 "select user_id from user where mail_address = ? and password = ? and is_deleted = 0 limit 1" +
-                ") and is_deleted = 0"
+                ")"
 
             const [SelectTokenResult,] = await connection.query(SelectTokenSQL,[MailAddress,HashPassword])
 
@@ -155,7 +162,12 @@ router.post("/SignIn",
             })
 
         }catch (e) {
-
+            console.log(e)
+            res.json({
+                ServerError:true,
+                ClientError:false,
+                Message:"サーバーエラー"
+            })
         }finally {
             await connection.end()
         }

@@ -20,13 +20,14 @@ module.exports = function (ReplyResult) {
         return {
             ServerError: false,
             ClientError: false,
-            ReturnReplyResult:ReturnReplyResult
+            Result:ReturnReplyResult
         }
     }
     catch (e){
         return {
             ServerError:true,
-            ClientError:false
+            ClientError:false,
+            Message:"サーバーエラー"
         }
     }
 }

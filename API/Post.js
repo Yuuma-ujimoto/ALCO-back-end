@@ -20,28 +20,32 @@ router.post("/",
         const AuthResult = await AuthAndGetUserData(req)
         if (AuthResult.ServerError || AuthResult.ClientError) {
             res.json(AuthResult)
+            return
         }
         const UserId = AuthResult.UserId
         const {PostText=null} = req.body
-        if (!!PostText){
+        if (!PostText){
             res.json({
                 ServerError:false,
                 ClientError:true,
-                Message:"データ不足s"
+                Message:"データ不足"
             })
+            return
         }
         let ImageFiles = req.files.PostImage
-
+        console.log(ImageFiles)
         // 強制的に配列に変換
         if (!Array.isArray(ImageFiles)) {
             ImageFiles = [ImageFiles]
         }
-
+        console.log(ImageFiles)
         // MEMO:ここら辺の変数名後で混同しないように気をつける
         let SavedImageFilePathArray = []
         let SaveImageResult
         for (let ImageFile of ImageFiles) {
-            SaveImageResult = await SaveImage(ImageFiles[ImageFile])
+            console.log("*******************")
+            console.log(ImageFile)
+            SaveImageResult = await SaveImage(ImageFile)
             //エラー出た場合
             if (SaveImageResult.ServerError || SaveImageResult.ClientError) {
                 res.json(SaveImageResult)
@@ -68,7 +72,7 @@ router.post("/",
                 ->S3移行時にRDSの移行もセットでやってそのタイミングでリセットすればいいかも
              */
 
-            const InsertPostImageSQL = "insert into(post_id,image_url) values(?,?)"
+            const InsertPostImageSQL = "insert into  post_image(post_id,image_url) values(?,?)"
             for (let SavedImageFilePath of SavedImageFilePathArray) {
                 await connection.query(InsertPostImageSQL, [PostId, SavedImageFilePath])
             }

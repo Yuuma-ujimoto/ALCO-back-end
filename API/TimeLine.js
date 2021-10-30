@@ -11,7 +11,7 @@ const SetFavoriteResult = require("../component/Post/SetFavoriteResult")
 router.get("/global",
     async (req, res) => {
         const AuthAndGetUserResult = await AuthAndGetUserData(req)
-        if (AuthAndGetUserResult.ServerError||AuthAndGetUserResult.ClientError){
+        if (AuthAndGetUserResult.ServerError || AuthAndGetUserResult.ClientError) {
             res.json(AuthAndGetUserResult)
             return
         }
@@ -25,52 +25,62 @@ router.get("/global",
             "limit 100 "
 
         const SelectPostReplySQL =
-            "select PR.post_reply_text,U.account_name,U.display_name"+
+            "select PR.post_reply_text,PR.post_id,U.account_name,U.display_name " +
             "from post_reply PR " +
             "inner join user U " +
             "on PR.user_id = U.user_id " +
-            "where PR.post_id in " +
-            "(select post_id from post where is_deleted = 0 order by post_id desc limit 100)"
-
+            "where U.is_deleted = 0 and PR.is_deleted = 0 order by PR.post_id desc limit 100"
+        console.log(SelectPostReplySQL)
         const SelectPostFavoriteSQL =
             "select count(*) as count,post_id " +
             "from post_favorite " +
             "group by post_id " +
-            "order by desc limit 100"
+            "order by post_id desc limit 100"
+        console.log(SelectPostFavoriteSQL)
 
         const connection = await mysql.createConnection(mysql_config)
         try {
-
 
             const [SelectPostResult,] = await connection.query(SelectPostSQL)
             const [SelectPostReplyResult,] = await connection.query(SelectPostReplySQL)
             const [SelectPostFavoriteResult,] = await connection.query(SelectPostFavoriteSQL)
 
             const EditedPostReplyResult = SetReplyResult(SelectPostReplyResult)
+            if (EditedPostReplyResult.ServerError || EditedPostReplyResult.ClientError) {
+                res.json(EditedPostReplyResult);
+                return
+            }
+
             const EditedPostFavoriteResult = SetFavoriteResult(SelectPostFavoriteResult)
+            if (EditedPostFavoriteResult.ServerError||EditedPostFavoriteResult.ClientError){
+                res.json(EditedPostFavoriteResult)
+                return
+            }
 
             res.json({
-                ServerError:false,
-                ClientError:false,
-                PostResult:SelectPostResult,
-                ReplyResult:EditedPostReplyResult,
-                FavoriteResult:EditedPostFavoriteResult
+                ServerError: false,
+                ClientError: false,
+                PostResult: SelectPostResult,
+                ReplyResult: EditedPostReplyResult.Result,
+                FavoriteResult: EditedPostFavoriteResult.Result
             })
-        }catch (e) {
+        } catch (e) {
             console.log(e)
             res.json({
-                ServerError:true,
-                ClientError:false,
-                Message:"サーバーエラー"
+                ServerError: true,
+                ClientError: false,
+                Message: "サーバーエラー"
             })
-        }finally {
+        } finally {
             await connection.end()
         }
-})
+    })
 
 router.get("/local")
 
 router.get("/status")
+
+router.get("/userPost")
 
 router.get("/status/reply")
 
