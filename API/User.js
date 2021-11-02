@@ -101,7 +101,9 @@ router.post("/signUp",
             res.json({
                 ServerError: false,
                 ClientError: false,
-                Token: Token
+                Token: Token,
+                AccountName:AccountName,
+                DisplayName:DisplayName
             })
 
 
@@ -146,19 +148,26 @@ router.post("/signIn",
                 return
             }
 
-            const SelectTokenSQL =
-                "select user_token from user_token where user_id = (" +
-                "select user_id from user where mail_address = ? and password = ? and is_deleted = 0 limit 1" +
-                ")"
+            const SelectUserDataSQL =
+                "select user_id,account_name as AccountName , display_name as DisplayName from user where mail_address = ? and password = ? and is_deleted = 0"
 
-            const [SelectTokenResult,] = await connection.query(SelectTokenSQL,[MailAddress,HashPassword])
+            const [SelectUserDataResult,] = await connection.query(SelectUserDataSQL,[MailAddress,HashPassword])
+
+            const SelectTokenSQL =
+                "select user_token from user_token where user_id = ?"
+
+
+            const UserId = SelectUserDataResult[0].user_id
+            const [SelectTokenResult,] = await connection.query(SelectTokenSQL,[UserId])
 
             const Token = SelectTokenResult[0].user_token
 
             res.json({
                 ServerError:false,
                 ClientError:false,
-                Token:Token
+                Token:Token,
+                AccountName:SelectUserDataResult[0].AccountName,
+                DisplayName:SelectUserDataResult[0].DisplayName
             })
 
         }catch (e) {

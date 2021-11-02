@@ -94,9 +94,100 @@ router.post("/",
         }
     })
 
-router.post("/reply")
+router.post("/reply",
+    async (req, res) => {
+    const UserData = await AuthAndGetUserData(req)
+        if (UserData.ServerError||UserData.ServerError){
+            res.json(UserData)
+            return
+        }
+        const {
+            PostId=null,
+            ReplyText=null
+        }= req.body
+        if (!PostId||!ReplyText){
+            res.json({
+                ServerError:false,
+                ClientError:true,
+                Message:"パラメーター不足"
+            })
+            return
+        }
+        const connection = await mysql.createConnection(mysql_config)
+        try {
+            const InsertReplySQL = "insert into post_reply(post_id,user_id,post_reply_text) values(?,?,?)"
+            const InsertReplyStatement = [PostId, UserData.UserId, ReplyText]
+            await connection.query(InsertReplySQL,InsertReplyStatement)
+            res.json({
+                ServerError:false,
+                ClientError:false
+            })
+        }
+        catch (e){
+            console.log(e)
+            res.json({
+                ServerError:true,
+                ClientError:false,
+                Message:"サーバーエラー"
+            })
+        }
+        finally {
+            await connection.end()
+        }
+})
 
-router.post("/favorite")
+router.post("/favorite",
+    async (req, res) => {
+    const UserData = await AuthAndGetUserData(req)
+        if (UserData.ServerError||UserData.ClientError){
+            res.json(UserData)
+        }
+        const connection = await mysql.createConnection(mysql_config)
+
+        const {PostId} = req.body
+        if (!PostId){
+            res.json({
+                ServerError:false,
+                ClientError:true,
+                Message:"パラメーター不足"
+            })
+            return
+        }
+        try {
+            const CheckFavoriteSQL = "select count(*) as count from post_favorite where user_id = ? and post_id = ? and is_deleted = 0"
+            const [CheckFavoriteResult,] = await connection.query(CheckFavoriteSQL, [UserData.UserId, PostId])
+
+            if (CheckFavoriteResult[0].count) {
+                const DeleteFavoriteSQL = "update post_favorite set is_deleted = 1 where user_id = ? and post_id = ?"
+                await connection.query(DeleteFavoriteSQL, [UserData.UserId, PostId])
+                res.json({
+                    ServerError: false,
+                    ClientError: false,
+                    Type: "Delete"
+                })
+                return
+            }
+            const InsertFavoriteSQL = "insert into post_favorite(user_id,post_id) values(?,?)"
+            await connection.query(InsertFavoriteSQL, [UserData.UserId, PostId])
+            res.json({
+                ServerError: false,
+                ClientError: false,
+                Type: "Insert"
+            })
+        }
+        catch (e){
+            console.log(e)
+            res.json({
+                ServerError:true,
+                ClientError:false,
+                Message:"サーバーエラー"
+            })
+        }
+        finally {
+            await connection.end()
+        }
+})
+
 
 
 

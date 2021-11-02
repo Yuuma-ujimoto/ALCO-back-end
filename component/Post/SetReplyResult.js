@@ -5,17 +5,14 @@ module.exports = function (ReplyResult) {
         let ResultPushObject
         for (let LoopObject of ReplyResult) {
             ResultPushObject = {}
-            console.log(LoopObject)
-            if (!ReturnReplyResult[LoopObject.post_id]) {
-                ReturnReplyResult[LoopObject.post_id] = []
+            if (!ReturnReplyResult[LoopObject.PostId]) {
+                ReturnReplyResult[LoopObject.PostId] = []
             }
-            ResultPushObject["reply_content"] = LoopObject.reply_content
-            ResultPushObject["account_name"] = LoopObject.account_name
-            ResultPushObject["display_name"] = LoopObject.display_name
-            ReturnReplyResult[LoopObject.post_id].push(ResultPushObject)
+            ResultPushObject["PostReplyText"] = LoopObject.PostReplyText
+            ResultPushObject["AccountName"] = LoopObject.AccountName
+            ResultPushObject["DisplayName"] = LoopObject.DisplayName
+            ReturnReplyResult[LoopObject.PostId].push(ResultPushObject)
         }
-
-        console.log(ReturnReplyResult)
 
         return {
             ServerError: false,

@@ -1,6 +1,6 @@
 const express = require("express")
 const app = express()
-
+const path = require("path")
 
 const cors = require("cors")
 
@@ -20,7 +20,8 @@ app.use(fileUpload())
 app.use(express.json());
 app.use(express.urlencoded({extended: true, limit: "50mb"}));
 
-app.use(express.static("files"))
+// app.use(express.static(path.join(__dirname+"/files")))
+app.use("/files",express.static(path.join(__dirname,"/files")))
 
 const UserRouter = require("./API/User")
 const PostRouter = require("./API/Post")
