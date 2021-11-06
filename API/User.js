@@ -98,6 +98,10 @@ router.post("/signUp",
 
             await connection.query(InsertTokenSQL, InsertTokenStatement)
 
+            const InsertLastAccessSQL = "insert into last_access(user_id) values(" +
+                "select user_id from user where mail_address = ? and password = ? and is_deleted = 0)"
+            await connection.query(InsertLastAccessSQL,[MailAddress,HashedPassword])
+
             res.json({
                 ServerError: false,
                 ClientError: false,

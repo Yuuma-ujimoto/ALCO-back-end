@@ -60,7 +60,7 @@ router.get("/global",
 
         const SelectPostFavoriteSQL =
             "select count(*) as FavCount,post_id as PostId " +
-            "from post_favorite " +
+            "from post_favorite where is_deleted = 0 " +
             "group by post_id " +
             "order by post_id desc limit 100"
 
