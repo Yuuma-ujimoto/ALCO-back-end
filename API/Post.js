@@ -118,6 +118,17 @@ router.post("/reply",
             const InsertReplySQL = "insert into post_reply(post_id,user_id,post_reply_text) values(?,?,?)"
             const InsertReplyStatement = [PostId, UserData.UserId, ReplyText]
             await connection.query(InsertReplySQL,InsertReplyStatement)
+
+            const InsertNoticeSQL =
+                "insert into notice(send_user_id,notice_link,notice_text,receive_user_id) values(?,?,?,(select user_id from post where post_id = ?)) "
+            const InsertNoticeStatement = [
+                UserData.UserId,
+                "あなたの投稿に返信が付きました。",
+                "/post/status/"+PostId,
+                PostId
+            ]
+            await connection.query(InsertNoticeSQL,InsertNoticeStatement)
+
             res.json({
                 ServerError:false,
                 ClientError:false
@@ -135,6 +146,8 @@ router.post("/reply",
             await connection.end()
         }
 })
+
+
 
 router.post("/favorite",
     async (req, res) => {
@@ -169,6 +182,16 @@ router.post("/favorite",
             }
             const InsertFavoriteSQL = "insert into post_favorite(user_id,post_id) values(?,?)"
             await connection.query(InsertFavoriteSQL, [UserData.UserId, PostId])
+
+            const InsertNoticeSQL = "insert into notice(send_user_id,notice_link,notice_text,receive_user_id) values(?,?,?,(select user_id from post where post_id = ?)) "
+            const InsertNoticeStatement = [
+                UserData.UserId,
+                "/post/status/"+PostId,
+                "投稿にいいねが付きました。",
+                PostId
+            ]
+            await connection.query(InsertNoticeSQL,InsertNoticeStatement)
+
             res.json({
                 ServerError: false,
                 ClientError: false,
