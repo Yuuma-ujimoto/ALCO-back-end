@@ -212,6 +212,25 @@ router.get("/status",
         }
     })
 
+router.get("/query",
+    async (req, res) => {
+    const UserData = await AuthAndGetUserData(req)
+        if (UserData.ServerError||UserData.ClientError){
+            res.json(UserData)
+            return
+        }
+
+    const {QueryText=null} = req.body
+    const QueryWildCardText = `%${QueryText}%`
+        const SelectQueryPostSQL =
+            "select P.post_text,P.post_id,P.created_at,U.account_name,U.display_name " +
+            "from post P " +
+            "inner join user U on P.user_id = U.user_id " +
+            "where U.is_deleted = 0 and P.is_deleted = 0 and P.post_text like ?"
+
+        const  SelectQueryPostSQLResult = ""
+})
+
 router.get("/userPost")
 
 router.get("/status/reply")
