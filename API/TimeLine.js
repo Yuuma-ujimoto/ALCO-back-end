@@ -4,12 +4,10 @@ const mysql = require("mysql2/promise")
 const mysql_config = require("../config/mysql")
 
 const AuthAndGetUserData = require("../component/AuthAndGetUserData")
-
-const SetReplyResult = require("../component/Post/SetReplyResult")
-const SetFavoriteResult = require("../component/Post/SetFavoriteResult")
-const SetImageResult = require("../component/Post/SetImageResut")
-const GetMyFavorite = require("../component/Post/GetMyFavoritePost")
 const CreateSubQueryStatement = require("../component/Post/CreatePostIdStatement")
+const getMyFavorite = require("../component/Post/GetMyFavoritePost")
+
+const SetData = require("../component/Post/SetResultData")
 
 //グローバルタイムライン
 router.get("/global",
@@ -67,47 +65,37 @@ router.get("/global",
             "group by post_id " +
             "order by post_id desc limit 100"
 
+        const SelectPostTagSQL =
+            "select AT.tag_name as TagName,TtP.post_id as PostId " +
+            "from tag_to_post TtP " +
+            "inner join alco_tag AT " +
+            "on TtP.alco_tag_id = AT.alco_tag_id " +
+            "where TtP.is_deleted = 0 and AT.is_deleted = 0"
+
 
         const connection = await mysql.createConnection(mysql_config)
         try {
-
             const [SelectPostResult,] = await connection.query(SelectPostSQL)
             const [SelectPostReplyResult,] = await connection.query(SelectPostReplySQL)
             const [SelectPostFavoriteResult,] = await connection.query(SelectPostFavoriteSQL)
             const [SelectPostImageResult,] = await connection.query(SelectPostImageSQL)
+            const [SelectPostTagResult,] = await connection.query(SelectPostTagSQL)
 
-            const EditedPostReplyResult = SetReplyResult(SelectPostReplyResult)
-            if (EditedPostReplyResult.ServerError || EditedPostReplyResult.ClientError) {
-                res.json(EditedPostReplyResult);
+            const MyFavorite = await getMyFavorite(AuthAndGetUserResult.UserId)
+            if (MyFavorite.ServerError||MyFavorite.ClientError){
+                res.json(MyFavorite)
                 return
             }
-
-            const EditedPostFavoriteResult = SetFavoriteResult(SelectPostFavoriteResult)
-            if (EditedPostFavoriteResult.ServerError || EditedPostFavoriteResult.ClientError) {
-                res.json(EditedPostFavoriteResult)
-                return
-            }
-            const EditedPostImageResult = SetImageResult(SelectPostImageResult)
-
-            if (EditedPostImageResult.ServerError || EditedPostImageResult.ClientError) {
-                res.json(EditedPostImageResult)
-                return
-            }
-
-            const getMyFavoriteResult = await GetMyFavorite(AuthAndGetUserResult.UserId)
-            if (getMyFavoriteResult.ServerError || getMyFavoriteResult.ClientError) {
-                res.json(getMyFavoriteResult)
-                return
-            }
-            res.json({
-                ServerError: false,
-                ClientError: false,
-                PostResult: SelectPostResult,
-                PostImageResult: EditedPostImageResult.Result,
-                ReplyResult: EditedPostReplyResult.Result,
-                FavoriteResult: EditedPostFavoriteResult.Result,
-                MyFavoriteResult: getMyFavoriteResult.FavoriteResult
-            })
+            console.log(MyFavorite)
+            const Result = new SetData(
+                SelectPostResult,
+                SelectPostImageResult,
+                SelectPostTagResult,
+                SelectPostReplyResult,
+                SelectPostFavoriteResult,
+                MyFavorite.FavoriteResult
+            )
+            res.json(Result)
         } catch (e) {
             console.log(e)
             res.json({
@@ -181,6 +169,8 @@ router.get("/status",
                 "from post_image " +
                 "where post_id = ? and is_deleted = 0"
 
+
+
             const SelectMyFavoriteSQL =
                 "select count(*) as count from post_favorite where user_id = ? and post_id = ? and is_deleted = 0"
             const [SelectPostStatusResult,] = await connection.query(SelectPostStatusSQL, [PostId])
@@ -189,7 +179,6 @@ router.get("/status",
             const [SelectReplyResult,] = await connection.query(SelectReplySQL, [PostId])
             const [SelectMyFavoriteResult,] = await connection.query(SelectMyFavoriteSQL, [UserData.UserId, PostId])
 
-            console.log(SelectPostImageResult)
             let EditedPostImageResult = []
             for (let PostImage of SelectPostImageResult) {
                 console.log(PostImage.ImageUrl)
@@ -276,6 +265,12 @@ router.get("/query",
             "group by post_id " +
             "order by post_id  desc limit 100"
 
+        const SelectPostTagSQL =
+            "select AT.tag_name as TagName,TtP.post_id as PostId " +
+            "from tag_to_post TtP " +
+            "inner join alco_tag AT " +
+            "on TtP.alco_tag_id = AT.alco_tag_id " +
+            "where TtP.post_id in (?) and  TtP.is_deleted = 0 and AT.is_deleted = 0"
 
         const connection = await mysql.createConnection(mysql_config)
         try {
@@ -287,42 +282,15 @@ router.get("/query",
             }
 
             const SubQueryPostIdStatement = InQueryResult.SubQueryPostIdStatement
+            const [SelectTagResult,] = await connection.query(SelectPostTagSQL,[SubQueryPostIdStatement])
             const [SelectPostReplyResult,] = await connection.query(SelectPostReplySQL,[SubQueryPostIdStatement])
             const [SelectPostFavoriteResult,] = await connection.query(SelectPostFavoriteSQL,[SubQueryPostIdStatement])
             const [SelectPostImageResult,] = await connection.query(SelectPostImageSQL,[SubQueryPostIdStatement])
 
-            const EditedPostReplyResult = SetReplyResult(SelectPostReplyResult)
-            if (EditedPostReplyResult.ServerError || EditedPostReplyResult.ClientError) {
-                res.json(EditedPostReplyResult);
-                return
-            }
+            const Result = new SetData(SelectPostResult,SelectPostImageResult,SelectTagResult,SelectPostReplyResult,SelectPostFavoriteResult)
 
-            const EditedPostFavoriteResult = SetFavoriteResult(SelectPostFavoriteResult)
-            if (EditedPostFavoriteResult.ServerError || EditedPostFavoriteResult.ClientError) {
-                res.json(EditedPostFavoriteResult)
-                return
-            }
-            const EditedPostImageResult = SetImageResult(SelectPostImageResult)
+            res.json(Result)
 
-            if (EditedPostImageResult.ServerError || EditedPostImageResult.ClientError) {
-                res.json(EditedPostImageResult)
-                return
-            }
-
-            const getMyFavoriteResult = await GetMyFavorite(AuthAndGetUserResult.UserId,SubQueryPostIdStatement)
-            if (getMyFavoriteResult.ServerError || getMyFavoriteResult.ClientError) {
-                res.json(getMyFavoriteResult)
-                return
-            }
-            res.json({
-                ServerError: false,
-                ClientError: false,
-                PostResult: SelectPostResult,
-                PostImageResult: EditedPostImageResult.Result,
-                ReplyResult: EditedPostReplyResult.Result,
-                FavoriteResult: EditedPostFavoriteResult.Result,
-                MyFavoriteResult: getMyFavoriteResult.FavoriteResult
-            })
         } catch (e) {
             console.log(e)
             res.json({

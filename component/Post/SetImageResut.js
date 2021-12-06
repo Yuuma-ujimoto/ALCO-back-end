@@ -2,10 +2,7 @@
 
 module.exports = function (PostImageResult) {
     try {
-
-
         const ReturnImageResult = {}
-
         for (let PostImage of PostImageResult) {
             if (!ReturnImageResult[PostImage.PostId]) {
                 ReturnImageResult[PostImage.PostId] = [PostImage.ImageUrl]

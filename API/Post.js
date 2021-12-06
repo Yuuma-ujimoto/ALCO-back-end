@@ -5,7 +5,7 @@ const mysql_config = require("../config/mysql")
 
 const AuthAndGetUserData = require("../component/AuthAndGetUserData")
 const SaveImage = require("../component/SaveImage")
-
+const InsertTag = require("../component/Tag/InsertTag")
 
 /*
     MEMO:
@@ -23,7 +23,8 @@ router.post("/",
             return
         }
         const UserId = AuthResult.UserId
-        const {PostText=null} = req.body
+        console.log(req.body)
+        const {PostText=null,Tag=[]} = req.body
         if (!PostText){
             res.json({
                 ServerError:false,
@@ -56,13 +57,10 @@ router.post("/",
         const connection = await mysql.createConnection(mysql_config)
         try {
             const InsertPostDataSQL = "insert into post(post_text,user_id) values(?,?)"
-            await connection.query(InsertPostDataSQL, [PostText, UserId])
+            const [InsertPostDataResult,] = await connection.query(InsertPostDataSQL, [PostText, UserId])
+            // InsertしたレコードのId取得
+            const InsertPostId = InsertPostDataResult.insertId
 
-            // As post_id　要らなかった気もするけど念の為
-            const SelectPostIdSQL = "select max(post_id) as post_id from post where post_text = ? and user_id = ? and is_deleted = 0"
-            const [SelectPostIdResult,] = await connection.query(SelectPostIdSQL, [PostText, UserId])
-
-            const PostId = SelectPostIdResult[0].post_id
 
             /*
             MEMO:
@@ -74,7 +72,13 @@ router.post("/",
 
             const InsertPostImageSQL = "insert into  post_image(post_id,image_url) values(?,?)"
             for (let SavedImageFilePath of SavedImageFilePathArray) {
-                await connection.query(InsertPostImageSQL, [PostId, SavedImageFilePath])
+                await connection.query(InsertPostImageSQL, [InsertPostId, SavedImageFilePath])
+            }
+
+            const InsertTagResult = await InsertTag(Tag,InsertPostId)
+            if(InsertTagResult.ServerError||InsertTagResult.ClientError){
+                res.json(InsertTagResult)
+                return
             }
 
             res.json({
@@ -211,7 +215,45 @@ router.post("/favorite",
         }
 })
 
+router.get("/getTagArray",async (req, res) => {
+    const UserData = await AuthAndGetUserData(req)
+    if (UserData.ServerError||UserData.ClientError){
+        res.json(UserData)
+        return
+    }
 
+    const connection = await mysql.createConnection(mysql_config)
+    try {
+        const SelectTagSQL = "select tag_name from alco_tag where is_deleted = 0 limit 100"
 
+        const [SelectTagResult,] = await connection.query(SelectTagSQL)
+        res.json({
+            ServerError:false,
+            ClientError:false,
+            TagArray:SelectTagResult
+        })
+
+    }catch (e){
+        console.log(e)
+        res.json({
+            ServerError:true,
+            ClientError:false,
+            Message:"サーバーエラー"
+        })
+    }
+})
+
+router.get("/tagList",async (req, res) => {
+    const connection = await mysql.createConnection(mysql_config)
+
+    try {
+        const SelectTagListSQL = "select tag_name from alco_tag where is_deleted = 0 limit 100"
+    }catch (e) {
+        console.log(e)
+    }
+    finally {
+        await connection.end()
+    }
+})
 
 module.exports = router

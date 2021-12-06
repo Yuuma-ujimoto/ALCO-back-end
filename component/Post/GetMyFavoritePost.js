@@ -24,10 +24,6 @@ module.exports = async (UserId,Query)=>{
             }
         }
 
-
-        console.log(EditMyFavoriteResult)
-
-
         return {
             ServerError:false,
             ClientError:false,
@@ -44,6 +40,6 @@ module.exports = async (UserId,Query)=>{
         }
     }
     finally {
-
+        await connection.end()
     }
 }
