@@ -8,11 +8,7 @@ const fileUpload = require("express-fileupload")
 
 
 
-app.use(cors({
-    origin: 'http://localhost:8080',
-    credentials: true,
-    optionsSuccessStatus: 200
-}))
+app.use(cors())
 
 // ファイルアップロードの設定
 app.use(fileUpload())

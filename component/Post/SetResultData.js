@@ -1,6 +1,5 @@
-
-module.exports =  class SetResultData {
-    constructor(PostData, PostImageData, TagData, ReplyData, FavData,MyFavoriteData) {
+module.exports = class SetResultData {
+    constructor(PostData, PostImageData, TagData, ReplyData, FavData, MyFavoriteData) {
 
         this.IndexArray = []
         this.Index = null
@@ -21,6 +20,7 @@ module.exports =  class SetResultData {
             this.ResultArray[loopCount].isMyFavorite = this.MyFavoite.indexOf(Post.PostId) !== -1
             loopCount++
         }
+
         for (let PostImage of this.PostImageData) {
             this.Index = this.IndexArray.indexOf(PostImage.PostId)
 
@@ -38,9 +38,18 @@ module.exports =  class SetResultData {
         for (let Fav of this.FavData) {
             this.ResultArray[this.IndexArray.indexOf(Fav.PostId)].FavCount = Fav.FavCount
         }
+
+        //補足情報
+        const TopCreatedAt = this.PostData[0].CreatedAt
+        const BottomCreatedAt = this.PostData[this.PostData.length - 1].CreatedAt
+        const PostCount = this.PostData.length
+
         return {
             ServerError: false,
             ClientError: false,
+            PostCount: PostCount,
+            BottomCreatedAt: BottomCreatedAt,
+            TopCreatedAt: TopCreatedAt,
             ResultArray: this.ResultArray
         }
     }

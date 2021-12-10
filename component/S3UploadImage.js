@@ -1,7 +1,11 @@
 const path = require("path")
+const Aws = require("aws-sdk")
+const config = require("../config/aws")
+
+Aws.config.update(config)
+
 
 module.exports = async (ImageData) => {
-
 
     try {
 
@@ -18,7 +22,9 @@ module.exports = async (ImageData) => {
         // ファイルパス
         const ImageFilePath = `${ImageFileName}.${ImageExtension}`
         const ImageFileAbsolutePath = path.join("./files/", ImageFilePath)
-        await ImageData.mv(ImageFileAbsolutePath)
+
+
+
         return {
             ServerError: false,
             ClientError:false,

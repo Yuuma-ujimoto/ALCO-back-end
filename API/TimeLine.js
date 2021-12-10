@@ -86,7 +86,6 @@ router.get("/global",
                 res.json(MyFavorite)
                 return
             }
-            console.log(MyFavorite)
             const Result = new SetData(
                 SelectPostResult,
                 SelectPostImageResult,
@@ -95,6 +94,7 @@ router.get("/global",
                 SelectPostFavoriteResult,
                 MyFavorite.FavoriteResult
             )
+
             res.json(Result)
         } catch (e) {
             console.log(e)

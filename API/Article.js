@@ -36,3 +36,17 @@ router.post("/",
         }
 
 })
+
+
+router.post("/image-upload",
+    async (req, res) => {
+        const UserData = await AuthAndGetUserData(req)
+        if (UserData.ServerError||UserData.ClientError){
+            res.json(UserData)
+            return
+        }
+        const image = req.files.image
+
+})
+
+module.exports = router
